@@ -1,0 +1,29 @@
+Key features included:
+
+Responsive Design: Uses Tailwind CSS for mobile-first responsive layout
+
+Interactive Map: Leaflet.js integration with dynamic updates
+
+Real-time Validation: IP format validation for both IPv4 and IPv6
+
+Security Checks: VPN/Proxy detection (requires API key for ipqualityscore)
+
+Clipboard Support: Easy copy-to-clipboard functionality
+
+Error Handling: Clear error messages with timeout
+
+Loading States: Visual spinner during API requests
+
+Privacy Section: Collapsible educational content
+
+Auto-detection: Shows user's current IP on initial load
+
+To use this application:
+
+Replace YOUR_API_KEY in the VPN check with a valid IPQualityScore API key
+
+Host on a HTTPS server for security
+
+Optional: Add rate limiting and additional error handling for production
+
+The application provides a clean, modern interface with all requested functionality while maintaining performance and security considerations.
