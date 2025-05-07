@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Address Finder</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2980b9;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f8fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: var(--dark);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .search-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .search-box button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .search-box button:hover {
+            background-color: var(--secondary);
+        }
+
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        .results-container {
+            display: none;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .results-header {
+            background-color: var(--dark);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-header h2 {
+            font-size: 1.3rem;
+            margin: 0;
+        }
+
+        .copy-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .copy-btn:hover {
+            background-color: var(--secondary);
+        }
+
+        .results-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 20px;
+        }
+
+        .info-section {
+            padding-right: 20px;
+        }
+
+        .info-section h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .info-item {
+            margin-bottom: 15px;
+        }
+
+        .info-item-title {
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .info-item-value {
+            padding: 8px 12px;
+            background-color: var(--light);
+            border-radius: 5px;
+            word-break: break-all;
+        }
+
+        .map-section {
+            height: 100%;
+            min-height: 400px;
+        }
+
+        #map {
+            height: 100%;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .loader i {
+            font-size: 3rem;
+            color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+
+        .vpn-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            margin-top: 5px;
+        }
+
+        .vpn-true {
+            background-color: var(--warning);
+        }
+
+        .vpn-false {
+            background-color: var(--success);
+        }
+
+        .info-section {
+            overflow-y: auto;
+            max-height: 500px;
+        }
+
+        .history-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .history-container h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .history-item {
+            background-color: var(--light);
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-item:hover {
+            background-color: #dfe6e9;
+        }
+
+        .history-item i {
+            color: var(--primary);
+        }
+
+        .education-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .education-container h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .accordion {
+            background-color: var(--light);
+            color: var(--dark);
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            text-align: left;
+            border: none;
+            outline: none;
+            transition: 0.4s;
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .accordion:hover {
+            background-color: #dfe6e9;
+        }
+
+        .panel {
+            padding: 0 18px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+        }
+
+        .panel p {
+            padding: 10px 0;
+        }
+
+        @media (max-width: 768px) {
+            .results-body {
+                grid-template-columns: 1fr;
+            }
+
+            .info-section {
+                padding-right: 0;
+                margin-bottom: 20px;
+            }
+
+            .map-section {
+                min-height: 300px;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .options {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>IP Address Finder</h1>
+            <p>Get detailed information about your IP address or any IP address you enter</p>
+        </header>
+
+        <div class="alert alert-success" id="successAlert">
+            <i class="fas fa-check-circle"></i> IP information retrieved successfully!
+        </div>
+
+        <div class="alert alert-error" id="errorAlert">
+            <i class="fas fa-exclamation-circle"></i> <span id="errorMessage">Something went wrong. Please try again.</span>
+        </div>
+
+        <div class="alert alert-warning" id="warningAlert">
+            <i class="fas fa-exclamation-triangle"></i> <span id="warningMessage">Warning message here.</span>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="ipInput" placeholder="Enter IP address or domain name...">
+                <button id="searchBtn"><i class="fas fa-search"></i> Search</button>
+            </div>
+            <div class="options">
+                <div class="toggle-container">
+                    <label class="toggle">
+                        <input type="checkbox" id="vpnToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span>Detect VPN/Proxy</span>
+                </div>
+                <button id="currentIpBtn" class="copy-btn">
+                    <i class="fas fa-globe"></i> Use My IP
+                </button>
+            </div>
+        </div>
+
+        <div class="loader" id="loader">
+            <i class="fas fa-circle-notch"></i>
+        </div>
+
+        <div class="results-container" id="resultsContainer">
+            <div class="results-header">
+                <h2>IP Information: <span id="ipDisplay">192.168.1.1</span></h2>
+                <button id="copyBtn" class="copy-btn">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            <div class="results-body">
+                <div class="info-section">
+                    <h3>Geographic Information</h3>
+                    <div class="info-item">
+                        <div class="info-item-title">Country</div>
+                        <div class="info-item-value" id="country">United States</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">Region</div>
+                        <div class="info-item-value" id="region">California</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">City</div>
+                        <div class="info-item-value" id="city">San Francisco</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">Postal Code</div>
+                        <div class="info-item-value" id="postal">94105</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">Time Zone</div>
+                        <div class="info-item-value" id="timezone">America/Los_Angeles</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">Coordinates</div>
+                        <div class="info-item-value" id="coordinates">37.7749, -122.4194</div>
+                    </div>
+
+                    <h3>Network Information</h3>
+                    <div class="info-item">
+                        <div class="info-item-title">ISP</div>
+                        <div class="info-item-value" id="isp">Comcast Cable Communications, LLC</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">ASN</div>
+                        <div class="info-item-value" id="asn">AS7922</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">Organization</div>
+                        <div class="info-item-value" id="org">Comcast Cable Communications, LLC</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-item-title">Hostname</div>
+                        <div class="info-item-value" id="hostname">c-73-93-135-22.hsd1.ca.comcast.net</div>
+                    </div>
+                    <div class="info-item" id="vpnContainer" style="display: none;">
+                        <div class="info-item-title">VPN/Proxy Detection</div>
+                        <div class="info-item-value" id="vpn">
+                            <span id="vpnStatus">Not detected</span>
+                            <div class="vpn-badge vpn-false" id="vpnBadge">No VPN</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="map-section">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-container">
+            <h3>Recent IP Searches</h3>
+            <div class="history-list" id="historyList">
+                <!-- History items will be added dynamically -->
+            </div>
+        </div>
+
+        <div class="education-container">
+            <h3>IP Address Information</h3>
+            <button class="accordion">What is an IP address? <i class="fas fa-chevron-down"></i></button>
+            <div class="panel">
+                <p>An IP (Internet Protocol) address is a unique numerical label assigned to each device connected to a computer network that uses the Internet Protocol for communication. IP addresses serve two main functions: identifying the host or network interface, and providing the location of the host in the network.</p>
+            </div>
+            <button class="accordion">IPv4 vs IPv6 <i class="fas fa-chevron-down"></i></button>
+            <div class="panel">
+                <p>IPv4 uses a 32-bit address scheme allowing for about 4.3 billion addresses, formatted as four octets separated by dots (e.g., 192.168.1.1). IPv6 uses a 128-bit address scheme allowing for approximately 340 undecillion addresses, formatted as eight groups of four hexadecimal digits separated by colons (e.g., 2001:0db8:85a3:0000:0000:8a2e:0370:7334).</p>
+            </div>
+            <button class="accordion">IP Privacy Considerations <i class="fas fa-chevron-down"></i></button>
+            <div class="panel">
+                <p>Your IP address can reveal information about your general location, internet service provider, and potentially browsing habits if tracked across websites. To enhance privacy, consider using VPNs (Virtual Private Networks), proxy servers, or the Tor network to mask your original IP address. Be aware that some websites and services may limit functionality when using these privacy tools.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const ipInput = document.getElementById('ipInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const currentIpBtn = document.getElementById('currentIpBtn');
+        const vpnToggle = document.getElementById('vpnToggle');
+        const copyBtn = document.getElementById('copyBtn');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const loader = document.getElementById('loader');
+        const successAlert = document.getElementById('successAlert');
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+        const warningAlert = document.getElementById('warningAlert');
+        const warningMessage = document.getElementById('warningMessage');
+        const ipDisplay = document.getElementById('ipDisplay');
+        const historyList = document.getElementById('historyList');
+        const vpnContainer = document.getElementById('vpnContainer');
+
+        // Map initialization
+        let map = null;
+        let marker = null;
+
+        // History storage
+        let searchHistory = JSON.parse(localStorage.getItem('ipSearchHistory')) || [];
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            loadSearchHistory();
+            setupAccordion();
+            getCurrentIP();
+        });
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([37.7749, -122.4194], 10);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Add default marker (will be updated with actual IP location)
+            marker = L.marker([37.7749, -122.4194]).addTo(map);
+        }
+
+        // Get current user IP
+        function getCurrentIP() {
+            showLoader();
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    ipInput.value = data.ip;
+                    searchIP(data.ip);
+                })
+                .catch(error => {
+                    hideLoader();
+                    showError('Unable to detect your IP address. Please enter an IP manually.');
+                    console.error('Error fetching IP:', error);
+                });
+        }
+
+        // Search IP
+        function searchIP(ip) {
+            showLoader();
+            hideAlerts();
+            
+            const apiUrl = `https://ipapi.co/${ip}/json/`;
+            
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Invalid IP address or API error');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.reason || 'API Error');
+                    }
+                    
+                    displayResults(data);
+                    
+                    if (vpnToggle.checked) {
+                        checkVPN(ip);
+                    } else {
+                        vpnContainer.style.display = 'none';
+                    }
+                    
+                    addToHistory(ip);
+                    showSuccess();
+                })
+                .catch(error => {
+                    hideLoader();
+                    showError(error.message);
+                    console.error('Error:', error);
+                });
+        }
+
+        // Check for VPN/Proxy
+        function checkVPN(ip) {
+            const vpnApiUrl = `https://vpnapi.io/api/${ip}?key=2e1cfccc98be48aebd3f246be9771ac7`;
+            
+            fetch(vpnApiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const vpnStatus = document.getElementById('vpnStatus');
+                    const vpnBadge = document.getElementById('vpnBadge');
+                    
+                    const isVpn = data.security && (data.security.vpn || data.security.proxy || data.security.tor);
+                    
+                    if (isVpn) {
+                        vpnStatus.textContent = 'VPN/Proxy detected';
+                        vpnBadge.textContent = 'VPN Detected';
+                        vpnBadge.className = 'vpn-badge vpn-true';
+                    } else {
+                        vpnStatus.textContent = 'No VPN/Proxy detected';
+                        vpnBadge.textContent = 'No VPN';
+                        vpnBadge.className = 'vpn-badge vpn-false';
+                    }
+                    
+                    vpnContainer.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error checking VPN:', error);
+                    // Don't show error to user, just hide the VPN section
+                    vpnContainer.style.display = 'none';
+                });
+        }
+
+        // Display results
+        function displayResults(data) {
+            // Update IP display
+            ipDisplay.textContent = data.ip || 'Unknown';
+            
+            // Update geographic info
+            document.getElementById('country').textContent = data.country_name || 'Unknown';
+            document.getElementById('region').textContent = data.region || 'Unknown';
+            document.getElementById('city').textContent = data.city || 'Unknown';
+            document.getElementById('postal').textContent = data.postal || 'Unknown';
+            document.getElementById('timezone').textContent = data.timezone || 'Unknown';
+            
+            const lat = data.latitude || 0;
+            const lon = data.longitude || 0;
+            document.getElementById('coordinates').textContent = `${lat}, ${lon}`;
+            
+            // Update network info
+            document.getElementById('isp').textContent = data.org || 'Unknown';
+            document.getElementById('asn').textContent = data.asn || 'Unknown';
+            document.getElementById('org').textContent = data.org || 'Unknown';
+            document.getElementById('hostname').textContent = data.hostname || 'No hostname available';
+            
+            // Update map
+            updateMap(lat, lon, data.city, data.country_name);
+            
+            // Show results
+            hideLoader();
+            resultsContainer.style.display = 'block';
+        }
+
+        // Update map with location
+        function updateMap(lat, lon, city, country) {
+            if (map && marker) {
+                map.setView([lat, lon], 10);
+                marker.setLatLng([lat, lon]);
+                marker.bindPopup(`<b>${city || 'Unknown'}, ${country || 'Unknown'}</b><br>Coordinates: ${lat}, ${lon}`).openPopup();
+            }
+        }
+
+        // Add to search history
+        function addToHistory(ip) {
+            // Prevent duplicates
+            if (!searchHistory.includes(ip)) {
+                searchHistory.unshift(ip);
+                // Keep only the last 10 searches
+                if (searchHistory.length > 10) {
+                    searchHistory.pop();
+                }
+                // Save to localStorage
+                localStorage.setItem('ipSearchHistory', JSON.stringify(searchHistory));
+                // Update history display
+                loadSearchHistory();
+            }
+        }
+
+        // Load search history
+        function loadSearchHistory() {
+            historyList.innerHTML = '';
+            searchHistory.forEach(ip => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `<i class="fas fa-history"></i> ${ip}`;
+                historyItem.addEventListener('click', () => {
+                    ipInput.value = ip;
+                    searchIP(ip);
+                });
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // Initialize accordion
+        function setupAccordion() {
+            const acc = document.getElementsByClassName("accordion");
+            for (let i = 0; i < acc.length; i++) {
+                acc[i].addEventListener("click", function() {
+                    this.classList.toggle("active");
+                    const panel = this.nextElementSibling;
+                    const icon = this.querySelector('i');
+                    
+                    if (panel.style.maxHeight) {
+                        panel.style.maxHeight = null;
+                        icon.className = 'fas fa-chevron-down';
+                    } else {
+                        panel.style.maxHeight = panel.scrollHeight + "px";
+                        icon.className = 'fas fa-chevron-up';
+                    }
+                });
+            }
+        }
+
+        // Show loader
+        function showLoader() {
+            loader.style.display = 'block';
+        }
+
+        // Hide loader
+        function hideLoader() {
+            loader.style.display = 'none';
+        }
+
+        // Show success alert
+        function showSuccess() {
+            successAlert.style.display = 'block';
+            setTimeout(() => {
+                successAlert.style.display = 'none';
+            }, 3000);
+        }
+
+        // Show error alert
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorAlert.style.display = 'block';
+            resultsContainer.style.display = 'none';
+        }
+
+        // Show warning alert
+        function showWarning(message) {
+            warningMessage.textContent = message;
+            warningAlert.style.display = 'block';
+            setTimeout(() => {
+                warningAlert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Hide all alerts
+        function hideAlerts() {
+            successAlert.style.display = 'none';
+            errorAlert.style.display = 'none';
+            warningAlert.style.display = 'none';
+        }
+
+        // IP validation
+        function isValidIPv4(ip) {
+            const regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            return regex.test(ip);
+        }
+
+        function isValidIPv6(ip) {
+            const regex = /^(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]
